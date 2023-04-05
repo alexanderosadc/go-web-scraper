@@ -1,0 +1,5 @@
+.bash_history
+.vscode/
+test/
+go.sum
+go.mod
