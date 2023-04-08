@@ -2,3 +2,5 @@
 .vscode/
 test/
 go.sum
+scripts/*
+

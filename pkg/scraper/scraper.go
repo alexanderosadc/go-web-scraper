@@ -3,11 +3,13 @@ package scraper
 import (
     "fmt"
     "log"
+    "os"
 
     "github.com/gocolly/colly"
 )
 
 func ScrapeWebPage(url string) {
+    colly.CacheDir("./cache/")
     c := colly.NewCollector()
     movieLinksCol := c.Clone()
     movieScriptsLinkCol := c.Clone()
@@ -23,11 +25,8 @@ func ScrapeWebPage(url string) {
 
 
     attribute = "p > a[href^=\"/Movie Scripts/\"]"
-    fmt.Println(attribute)
-
      movieLinksCol.OnHTML(attribute, func(e *colly.HTMLElement){
         link := e.Attr("href")
-        fmt.Println(url + link)
         if err := movieScriptsLinkCol.Visit(url + link); err != nil{
             fmt.Println(err)
         }
@@ -36,18 +35,25 @@ func ScrapeWebPage(url string) {
     attribute = "td > a[href^=\"/scripts/\"]"
     movieScriptsLinkCol.OnHTML(attribute, func(e *colly.HTMLElement){
         link := e.Attr("href")
-        fmt.Println(link)
-        movieScriptCol.Visit(url + link)
+        if err := movieScriptCol.Visit(url + link); err != nil{
+            fmt.Println(err)
+        }
     })
 
     attribute = "td.scrtext > pre"
     movieScriptCol.OnHTML(attribute, func(e *colly.HTMLElement){
-        text := e.Text
-        fmt.Println(text)
-    })
-
-    c.OnScraped(func(r *colly.Response) {
-        fmt.Println("Finished", r.Request.URL)
+        f, err := os.Create("." + e.Request.URL.Path)
+        fmt.Println(e.)
+        if err != nil{
+            fmt.Println(err) 
+        }
+        defer f.Close()
+        nrByte, err := f.Write([]byte(""))
+        if err != nil{
+            fmt.Println(err)
+        }
+        
+        fmt.Printf("nr of bytes written:%b, filename:%s\n", nrByte, e.Request.URL.Path)
     })
 
     if err := c.Visit(url); err != nil{
