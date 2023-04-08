@@ -1,6 +1,7 @@
 package scraper
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -9,35 +10,32 @@ import (
 )
 
 func ScrapeWebPage(url string) {
-    c := colly.NewCollector()
-    attributes := []string{"a[href^=\"/alphabetical/" + "\"]", "p > a[href^=\"/Movie Scripts/\"]", "td > a[href^=\"/scripts/\"]"}
-    var nextCol *colly.Collector
+	attributes := []string{"a[href^=\"/alphabetical/" + "\"]", "p > a[href^=\"/Movie Scripts/\"]", "td > a[href^=\"/scripts/\"]"}
+	c := colly.NewCollector()
+	movieLinksCol := c.Clone()
+	movieScriptsLinkCol := c.Clone()
+	movieScriptCol := c.Clone()
 
-    for _, attribute := range(attributes){
-        nextCol = crawl(attribute, url)
-        fmt.Printf("after crawl %#v \n", nextCol)
-    }
-
-    if nextCol == nil{
-        log.Println("nextCol == nil")
-        return
-    }
+	crawl(attributes[0], url, c, movieLinksCol)
+	crawl(attributes[1], url, movieLinksCol, movieScriptsLinkCol)
+	crawl(attributes[2], url, movieScriptsLinkCol, movieScriptCol)
 
 	attribute := "td.scrtext > pre"
-	nextCol.OnHTML(attribute, func(e *colly.HTMLElement) {
+	movieScriptCol.OnHTML(attribute, func(e *colly.HTMLElement) {
 		_ = e.DOM.Find("b").Remove()
-		res, err := e.DOM.Html()
+		_, err := e.DOM.Html()
 		if err != nil {
 			fmt.Println(err)
 		}
 
+        log.Println(e.Request.URL.Path)
 		f, err := os.Create("." + e.Request.URL.Path)
 		if err != nil {
 			fmt.Println(err)
 		}
 		defer f.Close()
 
-		nrByte, err := f.Write([]byte(res))
+		nrByte, err := f.Write([]byte(e.Text))
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -50,16 +48,20 @@ func ScrapeWebPage(url string) {
 	}
 }
 
-func crawl(attribute string, url string) (nextCol *colly.Collector) {
-	c := colly.NewCollector()
-	c.OnHTML(attribute, func(e *colly.HTMLElement) {
+func crawl(attribute string, url string, curCol *colly.Collector, nextCol *colly.Collector) (err error) {
+	fmt.Printf("crawl started %s", curCol)
+	curCol.OnHTML(attribute, func(e *colly.HTMLElement) {
 		link := e.Attr("href")
-		fmt.Println(e.Text)
-		nextCol = c.Clone()
+		if nextCol == nil {
+			errMsg := "crawler cannot move deeper,nextCol  = nil"
+			log.Println(errMsg)
+			err = errors.New(errMsg)
+			return
+		}
+
 		if err := nextCol.Visit(url + link); err != nil {
 			log.Println(err)
-            nextCol = nil
-            return
+			return
 		}
 	})
 	return
