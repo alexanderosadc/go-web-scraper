@@ -42,17 +42,23 @@ func ScrapeWebPage(url string) {
 
     attribute = "td.scrtext > pre"
     movieScriptCol.OnHTML(attribute, func(e *colly.HTMLElement){
+        _ = e.DOM.Find("b").Remove()
+        res, err :=e.DOM.Html()
+        if err != nil{
+            fmt.Println(err)
+        }
+
         f, err := os.Create("." + e.Request.URL.Path)
-        fmt.Println(e.)
         if err != nil{
             fmt.Println(err) 
         }
         defer f.Close()
-        nrByte, err := f.Write([]byte(""))
+
+        nrByte, err := f.Write([]byte(res))
         if err != nil{
             fmt.Println(err)
         }
-        
+
         fmt.Printf("nr of bytes written:%b, filename:%s\n", nrByte, e.Request.URL.Path)
     })
 
