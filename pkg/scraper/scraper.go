@@ -22,7 +22,8 @@ func ScrapeWebPage(url string) {
 
 	attribute := "td.scrtext > pre"
 	movieScriptCol.OnHTML(attribute, func(e *colly.HTMLElement) {
-		_ = e.DOM.Find("b").Remove()
+        htmlDoc := e.DOM;
+		_ = htmlDoc.Find("b").Remove()
 		_, err := e.DOM.Html()
 		if err != nil {
 			fmt.Println(err)
@@ -35,7 +36,7 @@ func ScrapeWebPage(url string) {
 		}
 		defer f.Close()
 
-		nrByte, err := f.Write([]byte(e.Text))
+		nrByte, err := f.Write([]byte(htmlDoc.Text()))
 		if err != nil {
 			fmt.Println(err)
 		}
